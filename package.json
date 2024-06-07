@@ -1,0 +1,26 @@
+{
+  "name": "strase",
+  "version": "0.0.2-alpha",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "playground": "npx ts-node test/main.ts",
+    "release": "pnpm run build && changeset publish",
+    "test": "vitest",
+    "lint": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "tsup": "^8.1.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "viem": "^2.13.6"
+  }
+}
