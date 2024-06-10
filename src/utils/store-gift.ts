@@ -1,12 +1,11 @@
-import { AbiItem, PublicClient, WalletClient, getContract, toHex } from "viem";
-import { getConsumerAddress } from "./constants";
+import { AbiItem, PublicClient, WalletClient, encodeFunctionData, getContract, toHex } from "viem";
+import { getStoreGiftAddress } from "./constants";
+import { abi } from "../abi/store-gift";
 import { getClient } from "./client";
-import { abi } from "../abi/consumer";
-import { encodeFunctionData } from 'viem'
 import { ChainID } from "./evm";
 
 const callbackGasLimit = 300_000;
-export class FunctionConsumer {
+export class StoreGiftCards {
     contract: any;
     publicWallet: PublicClient;
     subscriptionId: string = "60";
@@ -19,7 +18,7 @@ export class FunctionConsumer {
         chain: string,
         wallet?: WalletClient
     }) {
-        const address = getConsumerAddress(chain) as `0x${string}`;
+        const address = getStoreGiftAddress(chain) as `0x${string}`;
         this.publicWallet = getClient(chain);
         this.abi = abi as AbiItem[];
 
@@ -36,8 +35,8 @@ export class FunctionConsumer {
      * @param paymentIntent 
      * @returns 
      */
-    async sendRequest(publishableKey: string, paymentIntent: string) {
-        const args = [toHex(publishableKey), toHex(paymentIntent)];
+    async sendRequest(email: string, storeId: string) {
+        const args = [toHex(email)];
 
         // console.log("Sending request to Chainlink node", args);
         return await this.contract.write.sendRequest([
@@ -49,11 +48,12 @@ export class FunctionConsumer {
             [], // bytesArgs - arguments can be encoded off-chain to bytes.
             this.subscriptionId,
             callbackGasLimit,
+            storeId,
         ]);
     }
 
-    sendRequestEncode(publishableKey: string, paymentIntent: string) {
-        const args = [toHex(publishableKey), toHex(paymentIntent)];
+    sendRequestEncode(email: string, storeId: string) {
+        const args = [toHex(email)];
 
         // console.log("Sending request to Chainlink node", source);
         return encodeFunctionData({
@@ -68,26 +68,34 @@ export class FunctionConsumer {
                 [], // bytesArgs - arguments can be encoded off-chain to bytes.
                 this.subscriptionId,
                 callbackGasLimit,
+                storeId,
             ]
         });
     }
+
+    async getStore(): Promise<GiftRedeemables[]> {
+        return await this.contract.read.getStore() as GiftRedeemables[];
+    }
+
+    async store(storeId: string): Promise<GiftRedeemables> {
+        return await this.contract.read.store([storeId]) as GiftRedeemables;
+    }
 }
 
-// TODO: Include Mainnet API, as currently only testnet is supported
-// const source = fs
-//     // .readFileSync(path.resolve("source.js"))
-//     .readFileSync("./source.js")
-//     .toString();
+export interface GiftRedeemables {
+    id: bigint;
+    redeemAmount: bigint;
+    active: boolean;
+}
+
 const source = `
-const publicKey = args[0]
-const paymentIntent = args[1]
+const email = args[0]
 
 const apiResponse = await Functions.makeHttpRequest({
-    url: "https://strase-nine.vercel.app/api/chain/verify/test",
+    url: "https://strase-nine.vercel.app/api/chain/redeem",
     method: "POST",
     data: {
-        "publishableKey": publicKey,
-        "paymentIntent": paymentIntent,
+        "email": email,
     }
 })
 
